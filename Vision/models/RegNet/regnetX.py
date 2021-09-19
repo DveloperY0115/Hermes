@@ -13,21 +13,24 @@ from torchsummary import summary
 class HermesRegNetX(pl.LightningModule):
     def __init__(self, type: str, load_pretrained: bool = True, verbose=False):
         """
-        Construct RegNetX model by loading from torchvision's ResNet model zoo.
+        Construct RegNetX model by loading from pycls' model zoo.
 
         Args:
         - type: Type of RegNetX model to be loaded.
         - load_pretrained: Determine whether to download pretrained weights. Set to true by default.
+        - verbose: Determine whether to report all progress or not. Set to false by default, keeping initialization silent.
         """
         super().__init__()
 
+        # initialize RegNetX
+        # For details, please refer to https://github.com/facebookresearch/pycls
         self.network = models.regnetx(type, pretrained=load_pretrained).cuda()
 
         if verbose:
-            print("[!] Successfully loaded RegnetX-" + type)
+            print("[!] Successfully loaded RegNetX-" + type)
 
             # print model summary
-            summary(self.network, input_size=(3, 224, 224))
+            summary(self.network, input_size=(3, 224, 224), device="cuda")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
