@@ -51,7 +51,7 @@ class HermesResNet(pl.LightningModule):
         return optimizer
 
     def training_step(self, train_batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        pass
+        raise NotImplementedError
 
     def validation_step(self, val_batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
-        pass
+        raise NotImplementedError
