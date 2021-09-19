@@ -11,7 +11,7 @@ from torchsummary import summary
 
 
 class HermesRegNetX(pl.LightningModule):
-    def __init__(self, type: str, load_pretrained: bool = True, verbose=False):
+    def __init__(self, type: str, load_pretrained: bool = True, verbose=False) -> None:
         """
         Construct RegNetX model by loading from pycls' model zoo.
 
@@ -42,7 +42,7 @@ class HermesRegNetX(pl.LightningModule):
         out = self.network(x)
         return out
 
-    def configure_optimizers(self):
+    def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
