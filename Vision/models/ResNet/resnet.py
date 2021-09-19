@@ -7,27 +7,27 @@ import torch.optim as optim
 
 import pycls.models as models
 import pytorch_lightning as pl
+from torchsummary import summary
 
 
 class HermesResNet(pl.LightningModule):
-    def __init__(self, resnet_depth: int = 50, load_pretrained: bool = True):
+    def __init__(self, type: str, load_pretrained: bool = True, verbose=False):
         """
         Construct ResNet model by loading from torchvision's ResNet model zoo.
 
         Args:
-        - resnet_depth: A number of hidden layers in the model. Can be one of 50, 101, 152. Set to 50 by default.
+        - type: Type of ResNet model to be loaded.
         - load_pretrained: Determine whether to download pretrained weights. Set to true by default.
         """
         super().__init__()
 
-        if resnet_depth == 50:
-            self.resnet = models.resnet("50", pretrained=load_pretrained)
-        elif resnet_depth == 101:
-            self.resnet = models.resnet("101", pretrained=load_pretrained)
-        elif resnet_depth == 152:
-            self.resnet = models.resnet("152", pretrained=load_pretrained)
-        else:
-            raise ValueError("[!] Invalid number of hidden layers.")
+        self.network = models.resnet(type, pretrained=load_pretrained).cuda()
+
+        if verbose:
+            print("[!] Successfully loaded Resnet-" + type)
+
+            # print model summary
+            summary(self.network, input_size=(3, 224, 224))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -36,7 +36,7 @@ class HermesResNet(pl.LightningModule):
         Args:
         - x: A tensor of shape (*, C, H, W) representing a batch of images. Typically W = H = 224.
         """
-        out = self.resnet(x)
+        out = self.network(x)
         return out
 
     def configure_optimizers(self):
