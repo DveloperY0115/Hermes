@@ -1,6 +1,7 @@
 """
 regnetX.py - Pytorch implementation of "Designing Network Design Spaces, Radosavovic et al., (CVPR 2020)"
 """
+from typing import List
 
 import torch
 import torch.optim as optim
@@ -11,7 +12,7 @@ from torchsummary import summary
 
 
 class HermesRegNetX(pl.LightningModule):
-    def __init__(self, type: str, load_pretrained: bool = True, verbose=False) -> None:
+    def __init__(self, type: str = "400MF", load_pretrained: bool = True, verbose=False) -> None:
         """
         Construct RegNetX model by loading from pycls' model zoo.
 
@@ -51,3 +52,34 @@ class HermesRegNetX(pl.LightningModule):
 
     def validation_step(self, val_batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
         raise NotImplementedError
+
+    def get_stage_features(self, x: torch.Tensor) -> List[torch.Tensor]:
+        """
+        Retrieve feature maps from every stage of RegNet.
+
+        NOTE: These features will then be used in subsequent FPN layer, thus must retain information for gradient flow.
+
+        Args:
+        - x: A tensor of shape (*, C, H, W). Used for forward propagation.
+
+        Returns:
+        - A list of tensors containing feature maps after each forward-pass through each stage.
+        """
+        output = []
+
+        x = self.network.stem(x)
+        output.append(x.clone())
+
+        x = self.network.s1(x)
+        output.append(x.clone())
+
+        x = self.network.s2(x)
+        output.append(x.clone())
+
+        x = self.network.s3(x)
+        output.append(x.clone())
+
+        x = self.network.s4(x)
+        output.append(x.clone())
+
+        return output
