@@ -6,6 +6,7 @@ from typing import List
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 
 import pytorch_lightning as pl
@@ -13,7 +14,7 @@ from torchsummary import summary
 
 
 class HermesBiFPN(pl.LightningModule):
-    def __init__(self, num_layers=3, verbose: bool = False) -> None:
+    def __init__(self, num_layers: int = 3, verbose: bool = False) -> None:
         """
         Construct BiFPN module.
 
@@ -47,6 +48,95 @@ class HermesBiFPN(pl.LightningModule):
         raise NotImplementedError
 
 
+class HermesBiFPNBlock(pl.LightningModule):
+    def __init__(self, feature_dim: int, eps: float = 1e-4):
+        """
+        BiFPN block. A basic building block of Bi-directional Feature Pyramid Network (BiFPN).
+        For architecture details, please refer to 'EfficientDet: Scalable and Efficient Object Detection, Tan et al. (CVPR 2020)'
+
+        NOTE: This module is intended to be used with RegNet backbone, not EfficientNet as in the original paper.
+
+        Args:
+        - feature_dim: Dimensionality of the input feature(s)
+        - eps: Small value used to avoid numerical instability during 'Fast normalized fusion'. Set to 1e-4 by default.
+        """
+        super().__init__()
+
+        # initialize epsilon
+        self.eps = eps
+
+        # convolution layers for top-down pathway
+        self.conv_s1_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s2_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s3_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s4_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+
+        # convolution layers for bottom-up pathway
+        self.conv_s2_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s3_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s4_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_head_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+
+        # initialize weights & activations
+        self.w_td = nn.Parameter(torch.tensor(4, 2))
+        self.w_bu = nn.Parameter(torch.tensor(4, 3))
+        self.w_td_relu = nn.ReLU()
+        self.w_bu_relu = nn.ReLU()
+
+    def forward(self, features: List[torch.Tensor]) -> List[torch.Tensor]:
+        """
+        Forward propagation.
+
+        Args:
+        - features: List of tensors from different stages of RegNet backbone.
+
+        Returns:
+        - multi_scale_features: List of tensors
+        """
+        _, s1, s2, s3, s4, head = features
+
+        # top-down
+        w_td = self.w_td_relu(self.w_td)
+        w_td /= torch.sum(w_td, dim=1) + self.eps
+        w_bu = self.w_bu_relu(self.w_bu)
+        w_bu = torch.sum(w_bu, dim=1) + self.eps
+
+        head_td = head
+        s4_td = self.conv_s4_td(
+            w_td[0, 0] * s4 + w_td[0, 1] * F.interpolate(head_td, scale_factor=2)
+        )
+        s3_td = self.conv_s3_td(w_td[1, 0] * s3 + w_td[1, 1] * F.interpolate(s4_td, scale_factor=2))
+        s2_td = self.conv_s2_td(w_td[2, 0] * s2 + w_td[2, 1] * F.interpolate(s3_td, scale_factor=2))
+        s1_td = self.conv_s1_td(w_td[3, 0] * s1 + w_td[3, 1] * F.interpolate(s2_td, scale_factor=2))
+
+        # bottom-up
+        s1_out = s1_td
+        s2_out = self.conv_s2_bu(
+            w_bu[0, 0] * s2
+            + w_bu[0, 1] * s2_td
+            + w_bu[0, 2] * F.interpolate(s1_out, scale_factor=0.5)
+        )
+        s3_out = self.conv_s3_bu(
+            w_bu[1, 0] * s3
+            + w_bu[1, 1] * s3_td
+            + w_bu[1, 2] * F.interpolate(s2_out, scale_factor=0.5)
+        )
+        s4_out = self.conv_s4_bu(
+            w_bu[2, 0] * s4
+            + w_bu[2, 1] * s4_td
+            + w_bu[2, 2] * F.interpolate(s3_out, scale_factor=0.5)
+        )
+        head_out = self.conv_head_bu(
+            w_bu[3, 0] * head
+            + w_bu[3, 1] * head_td
+            + w_bu[3, 2] * F.interpolate(s4_out, scale_factor=0.5)
+        )
+
+        multi_scale_features = [s1_out, s2_out, s3_out, s4_out, head_out]
+
+        return multi_scale_features
+
+
 class HermesDepthwiseConvBlock(pl.LightningModule):
     def __init__(
         self,
@@ -73,10 +163,10 @@ class HermesDepthwiseConvBlock(pl.LightningModule):
         self.depthwise_conv = nn.Conv2d(
             in_channels,
             in_channels,
-            kernel_size,
-            stride,
-            padding,
-            dilation,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
             groups=in_channels,
             bias=False,
         )
@@ -135,7 +225,15 @@ class HermesConvBlock(pl.LightningModule):
         """
         super().__init__()
 
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+        self.conv = nn.Conv2d(
+            in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            bias=False,
+        )
 
         self.bn = nn.BatchNorm2d(out_channels)
         self.actvn = nn.ReLU()
