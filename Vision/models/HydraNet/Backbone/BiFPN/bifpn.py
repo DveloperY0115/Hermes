@@ -47,7 +47,7 @@ class HermesBiFPN(pl.LightningModule):
         raise NotImplementedError
 
 
-class HermesDepthwiseSeparableConv(pl.LightningModule):
+class HermesDepthwiseConvBlock(pl.LightningModule):
     def __init__(
         self,
         in_channels: int,
@@ -58,7 +58,7 @@ class HermesDepthwiseSeparableConv(pl.LightningModule):
         dilation: int = 1,
     ) -> None:
         """
-        Depthwise separable convolutional layer.
+        Depthwise separable convolution layer with batch normalization and ReLU activation.
 
         Args:
         - in_channels: Number of channels in the input image
@@ -107,6 +107,50 @@ class HermesDepthwiseSeparableConv(pl.LightningModule):
         """
         x = self.depthwise_conv(x)
         x = self.pointwise_conv(x)
+        x = self.bn(x)
+        out = self.actvn(x)
+        return out
+
+
+class HermesConvBlock(pl.LightningModule):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int = 1,
+        stride: int = 1,
+        padding: int = 0,
+        dilation: int = 1,
+    ) -> None:
+        """
+        Convolution layer with batch normalization and ReLU activation.
+
+        Args:
+        - in_channels: Number of channels in the input image
+        - out_channels: Number of channels produced by the convolution
+        - kernel_size: Size of the convolving kernel. Set to 1 by default.
+        - stride: Stride of the convolution. Set to 1 by default.
+        - padding: Padding added to all four sides of the input. Set to 0 by default.
+        - dilation: Spacing between kernel elements. Set to 1 by default.
+        """
+        super().__init__()
+
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding)
+
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.actvn = nn.ReLU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward propagation.
+
+        Args:
+        - x:
+
+        Returns:
+        - out:
+        """
+        x = self.conv(x)
         x = self.bn(x)
         out = self.actvn(x)
         return out
