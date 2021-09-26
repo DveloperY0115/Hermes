@@ -56,7 +56,7 @@ class HermesRegNetY(pl.LightningModule):
 
     def get_stage_features(self, x: torch.Tensor) -> List[torch.Tensor]:
         """
-        Retrieve feature maps from every stage of RegNet.
+        Retrieve feature maps from every stage (including head) of RegNet.
 
         NOTE: These features will then be used in subsequent FPN layer, thus must retain information for gradient flow.
 
@@ -81,6 +81,9 @@ class HermesRegNetY(pl.LightningModule):
         output.append(x.clone())
 
         x = self.network.s4(x)
+        output.append(x.clone())
+
+        x = self.network.head(x)
         output.append(x.clone())
 
         return output
