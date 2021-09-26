@@ -12,13 +12,13 @@ import pytorch_lightning as pl
 sys.path.append(".")
 sys.path.append("..")
 
-from Vision.models.ResNet.resnet import HermesResNet
+from Vision.models.HydraNet.Backbone.ResNet.resnet import HermesResNet
 
 
 def main():
 
     # initialize model
-    model = HermesResNet("50")
+    model = HermesResNet("50", verbose=True)
 
     # prepare datasets
     # train_dataset, valid_dataset = get_imagenet_dataset()

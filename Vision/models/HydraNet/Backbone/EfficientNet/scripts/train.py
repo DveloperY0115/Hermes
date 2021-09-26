@@ -11,7 +11,7 @@ import pytorch_lightning as pl
 sys.path.append(".")
 sys.path.append("..")
 
-from Vision.models.EfficientNet.efficientnet import HermesEfficientNet
+from Vision.models.HydraNet.Backbone.EfficientNet.efficientnet import HermesEfficientNet
 
 
 def main():
