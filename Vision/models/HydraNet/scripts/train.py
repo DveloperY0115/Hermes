@@ -30,10 +30,10 @@ def main():
     # initialize model
     hydranet = HermesHydraNet([48, 104, 208, 440], verbose=True).cuda()
 
-    summary(hydranet, input_size=(1, 3, 224, 224), device="cuda")
+    summary(hydranet, input_size=(256, 3, 224, 224), device="cuda")
 
     # draw computational graph(s)
-    writer.add_graph(hydranet, torch.zeros(1, 3, 224, 224).cuda())
+    writer.add_graph(hydranet, torch.zeros(256, 3, 224, 224).cuda())
     writer.close()
 
     # prepare datasets
