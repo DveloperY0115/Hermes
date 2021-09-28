@@ -7,9 +7,9 @@ from typing import List
 import torch
 import torch.optim as optim
 
-import pycls.models as models
 import pytorch_lightning as pl
-from torchsummary import summary
+import pycls.models as models
+from torchinfo import summary
 
 
 class HermesRegNetY(pl.LightningModule):
@@ -69,21 +69,22 @@ class HermesRegNetY(pl.LightningModule):
         output = []
 
         x = self.network.stem(x)
-        output.append(x.clone())
+        output.append(x.clone().detach())
 
         x = self.network.s1(x)
-        output.append(x.clone())
+        output.append(x.clone().detach())
 
         x = self.network.s2(x)
-        output.append(x.clone())
+        output.append(x.clone().detach())
 
         x = self.network.s3(x)
-        output.append(x.clone())
+        output.append(x.clone().detach())
 
         x = self.network.s4(x)
-        output.append(x.clone())
+        output.append(x.clone().detach())
 
+        # head is not detached for back propagation
         x = self.network.head(x)
-        output.append(x.clone())
+        output.append(x)
 
         return output

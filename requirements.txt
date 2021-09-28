@@ -26,6 +26,7 @@ nvidia-ml-py3==7.352.0
 oauthlib==3.1.1
 opencv-python==4.5.3.56
 packaging==21.0
+pandas==1.3.3
 pathspec==0.9.0
 Pillow==8.3.2
 platformdirs==2.3.0
@@ -37,7 +38,9 @@ pyasn1-modules==0.2.8
 pycls @ git+https://github.com/facebookresearch/pycls@8c79a8e2adfffa7cae3a88aace28ef45e52aa7e5
 pyDeprecate==0.3.1
 pyparsing==2.4.7
+python-dateutil==2.8.2
 pytorch-lightning==1.4.7
+pytz==2021.1
 PyYAML==5.4.1
 regex==2021.8.28
 requests==2.26.0
@@ -52,9 +55,10 @@ tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.0
 tomli==1.2.1
 torch==1.9.0+cu111
+torch-tb-profiler==0.2.1
 torchaudio==0.9.0
+torchinfo==1.5.3
 torchmetrics==0.5.1
-torchsummary==1.5.1
 torchvision==0.10.0+cu111
 tqdm==4.62.2
 typing-extensions==3.10.0.2

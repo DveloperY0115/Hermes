@@ -8,7 +8,7 @@ import torch.optim as optim
 
 import pycls.models as models
 import pytorch_lightning as pl
-from torchsummary import summary
+from torchinfo import summary
 
 
 class HermesRegNetX(pl.LightningModule):
