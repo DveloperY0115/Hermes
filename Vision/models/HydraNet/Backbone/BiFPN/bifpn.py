@@ -5,16 +5,17 @@ bifpn.py - Pytorch implementation of BiFPN introduced in "EfficientDet: Scalable
 from typing import List
 
 import torch
+from torch._C import dtype
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
 import pytorch_lightning as pl
-from torchsummary import summary
+from torchinfo import summary
 
 
 class HermesBiFPN(pl.LightningModule):
-    def __init__(self, num_layers: int = 3, verbose: bool = False) -> None:
+    def __init__(self, feature_dim: int, num_bifpn_block: int = 3, verbose: bool = False) -> None:
         """
         Construct BiFPN module.
 
@@ -23,19 +24,33 @@ class HermesBiFPN(pl.LightningModule):
         """
         super().__init__()
 
+        bifpn_blocks = []
+
+        for _ in range(num_bifpn_block):
+            bifpn_blocks.append(HermesBiFPNBlock(feature_dim))
+
+        self.bifpn_blocks = nn.ModuleList(bifpn_blocks)
+
         if verbose:
             print("[!] Successfully initialized BiFPN")
 
             # print model summary
-            # summary(sel, input_size=(3, 224, 224), device="cuda")
+            # summary(self, input_size=(3, 224, 224), device="cuda")
 
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
         """
         Forward propagation.
 
+        Args:
+        - x: List of tensors each of which has shape (*, feature_dim)
 
+        Returns:
+        -
         """
-        pass
+        for idx, bifpn_block in enumerate(self.bifpn_blocks):
+            x = bifpn_block(x)
+
+        return x
 
     def configure_optimizers(self) -> optim.Optimizer:
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
@@ -66,20 +81,32 @@ class HermesBiFPNBlock(pl.LightningModule):
         self.eps = eps
 
         # convolution layers for top-down pathway
-        self.conv_s1_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_s2_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_s3_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_s4_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s1_td = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        self.conv_s2_td = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        self.conv_s3_td = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        # self.conv_s4_td = HermesDepthwiseConvBlock(feature_dim, feature_dim)
 
         # convolution layers for bottom-up pathway
-        self.conv_s2_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_s3_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_s4_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
-        self.conv_head_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
+        self.conv_s2_bu = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        self.conv_s3_bu = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        self.conv_s4_bu = HermesDepthwiseConvBlock(
+            feature_dim, feature_dim, kernel_size=3, stride=1, padding=1
+        )
+        # self.conv_head_bu = HermesDepthwiseConvBlock(feature_dim, feature_dim)
 
         # initialize weights & activations
-        self.w_td = nn.Parameter(torch.tensor(4, 2))
-        self.w_bu = nn.Parameter(torch.tensor(4, 3))
+        self.w_td = nn.Parameter(torch.randn((3, 2), dtype=torch.float32))
+        self.w_bu = nn.Parameter(torch.randn((3, 3), dtype=torch.float32))
         self.w_td_relu = nn.ReLU()
         self.w_bu_relu = nn.ReLU()
 
@@ -93,21 +120,18 @@ class HermesBiFPNBlock(pl.LightningModule):
         Returns:
         - multi_scale_features: List of tensors
         """
-        _, s1, s2, s3, s4, head = features
+        s1, s2, s3, s4 = features
 
         # top-down
         w_td = self.w_td_relu(self.w_td)
-        w_td /= torch.sum(w_td, dim=1) + self.eps
+        w_td /= torch.sum(w_td, dim=1).unsqueeze(1).repeat((1, 2)) + self.eps
         w_bu = self.w_bu_relu(self.w_bu)
-        w_bu = torch.sum(w_bu, dim=1) + self.eps
+        w_bu = torch.sum(w_bu, dim=1).unsqueeze(1).repeat((1, 3)) + self.eps
 
-        head_td = head
-        s4_td = self.conv_s4_td(
-            w_td[0, 0] * s4 + w_td[0, 1] * F.interpolate(head_td, scale_factor=2)
-        )
-        s3_td = self.conv_s3_td(w_td[1, 0] * s3 + w_td[1, 1] * F.interpolate(s4_td, scale_factor=2))
-        s2_td = self.conv_s2_td(w_td[2, 0] * s2 + w_td[2, 1] * F.interpolate(s3_td, scale_factor=2))
-        s1_td = self.conv_s1_td(w_td[3, 0] * s1 + w_td[3, 1] * F.interpolate(s2_td, scale_factor=2))
+        s4_td = s4
+        s3_td = self.conv_s3_td(w_td[0, 0] * s3 + w_td[0, 1] * F.interpolate(s4_td, scale_factor=2))
+        s2_td = self.conv_s2_td(w_td[1, 0] * s2 + w_td[1, 1] * F.interpolate(s3_td, scale_factor=2))
+        s1_td = self.conv_s1_td(w_td[2, 0] * s1 + w_td[2, 1] * F.interpolate(s2_td, scale_factor=2))
 
         # bottom-up
         s1_out = s1_td
@@ -126,13 +150,8 @@ class HermesBiFPNBlock(pl.LightningModule):
             + w_bu[2, 1] * s4_td
             + w_bu[2, 2] * F.interpolate(s3_out, scale_factor=0.5)
         )
-        head_out = self.conv_head_bu(
-            w_bu[3, 0] * head
-            + w_bu[3, 1] * head_td
-            + w_bu[3, 2] * F.interpolate(s4_out, scale_factor=0.5)
-        )
 
-        multi_scale_features = [s1_out, s2_out, s3_out, s4_out, head_out]
+        multi_scale_features = [s1_out, s2_out, s3_out, s4_out]
 
         return multi_scale_features
 
