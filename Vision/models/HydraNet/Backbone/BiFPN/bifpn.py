@@ -45,9 +45,9 @@ class HermesBiFPN(pl.LightningModule):
         - x: List of tensors each of which has shape (*, feature_dim)
 
         Returns:
-        -
+        - x: List of tensors each of which has shape (*, feature_dim) after top-down / bottom-up feature fushion
         """
-        for idx, bifpn_block in enumerate(self.bifpn_blocks):
+        for bifpn_block in self.bifpn_blocks:
             x = bifpn_block(x)
 
         return x
@@ -138,17 +138,17 @@ class HermesBiFPNBlock(pl.LightningModule):
         s2_out = self.conv_s2_bu(
             w_bu[0, 0] * s2
             + w_bu[0, 1] * s2_td
-            + w_bu[0, 2] * F.interpolate(s1_out, scale_factor=0.5)
+            + w_bu[0, 2] * F.interpolate(s1_out, scale_factor=0.5, recompute_scale_factor=False)
         )
         s3_out = self.conv_s3_bu(
             w_bu[1, 0] * s3
             + w_bu[1, 1] * s3_td
-            + w_bu[1, 2] * F.interpolate(s2_out, scale_factor=0.5)
+            + w_bu[1, 2] * F.interpolate(s2_out, scale_factor=0.5, recompute_scale_factor=False)
         )
         s4_out = self.conv_s4_bu(
             w_bu[2, 0] * s4
             + w_bu[2, 1] * s4_td
-            + w_bu[2, 2] * F.interpolate(s3_out, scale_factor=0.5)
+            + w_bu[2, 2] * F.interpolate(s3_out, scale_factor=0.5, recompute_scale_factor=False)
         )
 
         multi_scale_features = [s1_out, s2_out, s3_out, s4_out]
