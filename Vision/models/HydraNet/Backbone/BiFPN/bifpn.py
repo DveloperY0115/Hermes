@@ -5,7 +5,6 @@ bifpn.py - Pytorch implementation of BiFPN introduced in "EfficientDet: Scalable
 from typing import List
 
 import torch
-from torch._C import dtype
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -124,9 +123,9 @@ class HermesBiFPNBlock(pl.LightningModule):
 
         # top-down
         w_td = self.w_td_relu(self.w_td)
-        w_td /= torch.sum(w_td, dim=1).unsqueeze(1).repeat((1, 2)) + self.eps
+        w_td /= torch.sum(w_td, dim=1, keepdim=True).repeat((1, 2)) + self.eps
         w_bu = self.w_bu_relu(self.w_bu)
-        w_bu = torch.sum(w_bu, dim=1).unsqueeze(1).repeat((1, 3)) + self.eps
+        w_bu = torch.sum(w_bu, dim=1, keepdim=True).repeat((1, 3)) + self.eps
 
         s4_td = s4
         s3_td = self.conv_s3_td(w_td[0, 0] * s3 + w_td[0, 1] * F.interpolate(s4_td, scale_factor=2))
