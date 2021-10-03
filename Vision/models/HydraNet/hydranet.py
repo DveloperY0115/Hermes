@@ -11,8 +11,8 @@ import torch.optim as optim
 import pytorch_lightning as pl
 from torchinfo import summary
 
-from Vision.models.HydraNet.Backbone.RegNet import HermesRegNetY
-from Vision.models.HydraNet.Backbone.BiFPN import HermesBiFPN, bifpn
+from .Backbone.RegNet import HermesRegNetY
+from .Backbone.BiFPN import HermesBiFPN
 
 
 class HermesHydraNet(pl.LightningModule):
