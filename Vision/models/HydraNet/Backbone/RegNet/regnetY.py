@@ -76,19 +76,19 @@ class HermesRegNetY(pl.LightningModule):
         output = []
 
         x = self.network.stem(x)
-        output.append(x.clone().detach())
+        output.append(x.clone())
 
         x = self.network.s1(x)
-        output.append(x.clone().detach())
+        output.append(x.clone())
 
         x = self.network.s2(x)
-        output.append(x.clone().detach())
+        output.append(x.clone())
 
         x = self.network.s3(x)
-        output.append(x.clone().detach())
+        output.append(x.clone())
 
         x = self.network.s4(x)
-        output.append(x.clone().detach())
+        output.append(x.clone())
 
         # head is not detached for back propagation
         x = self.network.head(x)
