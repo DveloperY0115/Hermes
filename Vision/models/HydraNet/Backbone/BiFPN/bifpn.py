@@ -14,27 +14,25 @@ from torchinfo import summary
 
 
 class HermesBiFPN(pl.LightningModule):
-    def __init__(self, feature_dim: int, num_bifpn_block: int = 3, verbose: bool = False) -> None:
+    def __init__(
+        self, 
+        feature_dim: int, 
+        num_bifpn_block: int = 3, 
+        verbose: bool = False) -> None:
         """
         Construct BiFPN module.
 
         Args:
-        - verbose: Determine whether to report all progress or not. Set to false by default, keeping initialization silent.
+        - verbose: Determine whether to report all progress or not. 
+            Set to false by default, keeping initialization silent.
         """
         super().__init__()
 
-        bifpn_blocks = []
-
-        for _ in range(num_bifpn_block):
-            bifpn_blocks.append(HermesBiFPNBlock(feature_dim))
-
+        bifpn_blocks = [HermesBiFPNBlock(feature_dim)] * num_bifpn_block
         self.bifpn_blocks = nn.ModuleList(bifpn_blocks)
 
         if verbose:
             print("[!] Successfully initialized BiFPN")
-
-            # print model summary
-            # summary(self, input_size=(3, 224, 224), device="cuda")
 
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
         """
@@ -63,12 +61,16 @@ class HermesBiFPN(pl.LightningModule):
 
 
 class HermesBiFPNBlock(pl.LightningModule):
-    def __init__(self, feature_dim: int, eps: float = 1e-4):
+    def __init__(
+        self, 
+        feature_dim: int, 
+        eps: float = 1e-4):
         """
         BiFPN block. A basic building block of Bi-directional Feature Pyramid Network (BiFPN).
         For architecture details, please refer to 'EfficientDet: Scalable and Efficient Object Detection, Tan et al. (CVPR 2020)'
 
-        NOTE: This module is intended to be used with RegNet backbone, not EfficientNet as in the original paper.
+        NOTE: This module is intended to be used with RegNet backbone, 
+        not EfficientNet as in the original paper.
 
         Args:
         - feature_dim: Dimensionality of the input feature(s)
