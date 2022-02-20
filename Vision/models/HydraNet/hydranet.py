@@ -17,13 +17,22 @@ from .Backbone.BiFPN import HermesBiFPN
 
 class HermesHydraNet(pl.LightningModule):
     def __init__(
-        self, regnet_feature_dims: List, bifpn_feature_dim: int = 64, verbose: bool = False
+        self, 
+        regnet_feature_dims: List[int], 
+        bifpn_feature_dim: int = 64, 
+        verbose: bool = False
     ) -> None:
         """
         Construct Hydra network.
 
         Args:
-        - verbose: Determine whether to report all progress or not. Set to false by default, keeping initialization silent.
+        - regnet_feature_dims: A list of integers.
+            Number of channels of feature maps obtained from each intermediate
+            layer of RegNet.
+        - bifpn_feature_dim: Integer.
+            Number of channels of BiFPN feature maps. Set to 64 by default.
+        - verbose: Determine whether to report all progress or not. 
+            Set to false by default, keeping initialization silent.
         """
         super().__init__()
 
@@ -33,65 +42,35 @@ class HermesHydraNet(pl.LightningModule):
         # convolution layers for matching the number of channels
         # TODO: Replace hard-coded numbers to variables
         conv_blocks = []
-        conv_blocks.append(
-            nn.Conv2d(
-                regnet_feature_dims[0],  # 48
-                bifpn_feature_dim,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
+        for feature_dim in regnet_feature_dims:
+            conv_blocks.append(
+                nn.Conv2d(
+                    feature_dim,
+                    bifpn_feature_dim,
+                    kernel_size=3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                )
             )
-        )
-        conv_blocks.append(
-            nn.Conv2d(
-                regnet_feature_dims[1],  # 104
-                bifpn_feature_dim,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
-            )
-        )
-        conv_blocks.append(
-            nn.Conv2d(
-                regnet_feature_dims[2],  # 208
-                bifpn_feature_dim,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
-            )
-        )
-        conv_blocks.append(
-            nn.Conv2d(
-                regnet_feature_dims[3],  # 440
-                bifpn_feature_dim,
-                kernel_size=3,
-                stride=1,
-                padding=1,
-                bias=False,
-            )
-        )
         self.conv_blocks = nn.ModuleList(conv_blocks)
 
-        bn_blocks = []
-        for _ in range(len(conv_blocks)):
-            bn_blocks.append(nn.BatchNorm2d(bifpn_feature_dim))
+        bn_blocks = [nn.BatchNorm2d(bifpn_feature_dim)] * len(conv_blocks)
         self.bn_blocks = nn.ModuleList(bn_blocks)
 
         # Bi-FPN module with feature dimensionality 64
         self.bifpn = HermesBiFPN(feature_dim=bifpn_feature_dim)
 
-        # if verbose:
-        # summary(self, input_size=(3, 224, 224), device="cuda")
+        if verbose:
+            print("[!] Successfully initialized HydraNet")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward propagation.
 
         Args:
-        - x: A tensor of shape (*, C, H, W) representing a batch of images from which features will be extracted.
+        - x: Tensor of shape (*, C, H, W). 
+            A batch of images from which features will be extracted.
 
         Returns:
         -
@@ -104,8 +83,8 @@ class HermesHydraNet(pl.LightningModule):
         head_feature = regnet_features.pop()
 
         bifpn_input = []
-        for idx, feature in enumerate(regnet_features):
-            bifpn_input.append(self.bn_blocks[idx](self.conv_blocks[idx](feature)))
+        for feature, conv, bn in zip(regnet_features, self.conv_blocks, self.bn_blocks):
+            bifpn_input.append(bn(conv(feature)))
 
         # BiFPN forward-pass
         multi_scale_features = self.bifpn(bifpn_input)
@@ -116,8 +95,14 @@ class HermesHydraNet(pl.LightningModule):
         optimizer = optim.Adam(self.parameters(), lr=1e-3)
         return optimizer
 
-    def training_step(self, train_batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def training_step(
+        self, 
+        train_batch: torch.Tensor, 
+        batch_idx: int) -> torch.Tensor:
         raise NotImplementedError
 
-    def validation_step(self, val_batch: torch.Tensor, batch_idx: int) -> torch.Tensor:
+    def validation_step(
+        self, 
+        val_batch: torch.Tensor, 
+        batch_idx: int) -> torch.Tensor:
         raise NotImplementedError
