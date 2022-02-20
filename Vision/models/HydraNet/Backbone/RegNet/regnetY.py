@@ -13,7 +13,11 @@ from torchinfo import summary
 
 
 class HermesRegNetY(pl.LightningModule):
-    def __init__(self, type: str = "400MF", load_pretrained: bool = True, verbose=False) -> None:
+    def __init__(
+        self, 
+        type: str = "400MF", 
+        load_pretrained: bool = True, 
+        verbose=False) -> None:
         """
         Construct RegNetY model by loading from pycls' model zoo.
 
@@ -58,13 +62,16 @@ class HermesRegNetY(pl.LightningModule):
         """
         Retrieve feature maps from every stage (including head) of RegNet.
 
-        NOTE: These features will then be used in subsequent FPN layer, thus must retain information for gradient flow.
+        NOTE: These features will then be used in subsequent FPN layer, 
+        thus must retain information for gradient flow.
 
         Args:
-        - x: A tensor of shape (*, C, H, W). Used for forward propagation.
+        - x: Tensor of shape (*, C, H, W). 
+            Used for forward propagation.
 
         Returns:
-        - A list of tensors containing feature maps after each forward-pass through each stage.
+        - A list of tensors containing feature maps
+             after each forward-pass through each stage.
         """
         output = []
 
