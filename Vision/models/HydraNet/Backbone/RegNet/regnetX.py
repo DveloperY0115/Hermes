@@ -12,7 +12,11 @@ from torchinfo import summary
 
 
 class HermesRegNetX(pl.LightningModule):
-    def __init__(self, type: str = "400MF", load_pretrained: bool = True, verbose=False) -> None:
+    def __init__(
+        self, 
+        type: str="400MF", 
+        load_pretrained: bool=True, 
+        verbose: bool=False) -> None:
         """
         Construct RegNetX model by loading from pycls' model zoo.
 

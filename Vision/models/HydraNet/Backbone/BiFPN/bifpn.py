@@ -17,8 +17,8 @@ class HermesBiFPN(pl.LightningModule):
     def __init__(
         self, 
         feature_dim: int, 
-        num_bifpn_block: int = 3, 
-        verbose: bool = False) -> None:
+        num_bifpn_block: int=3, 
+        verbose: bool=False) -> None:
         """
         Construct BiFPN module.
 
@@ -39,10 +39,11 @@ class HermesBiFPN(pl.LightningModule):
         Forward propagation.
 
         Args:
-        - x: List of tensors each of which has shape (*, feature_dim)
+        - x: List of tensors each of which has shape (B, feature_dim).
 
         Returns:
-        - x: List of tensors each of which has shape (*, feature_dim) after top-down / bottom-up feature fushion
+        - x: List of tensors each of which has shape (B, feature_dim) 
+            after top-down / bottom-up feature fushion.
         """
         for bifpn_block in self.bifpn_blocks:
             x = bifpn_block(x)
@@ -64,17 +65,22 @@ class HermesBiFPNBlock(pl.LightningModule):
     def __init__(
         self, 
         feature_dim: int, 
-        eps: float = 1e-4):
+        eps: float=1e-4
+        ) -> pl.LightningModule:
         """
         BiFPN block. A basic building block of Bi-directional Feature Pyramid Network (BiFPN).
-        For architecture details, please refer to 'EfficientDet: Scalable and Efficient Object Detection, Tan et al. (CVPR 2020)'
+        For architecture details, please refer to 'EfficientDet: Scalable and Efficient 
+        Object Detection, Tan et al. (CVPR 2020)'.
 
-        NOTE: This module is intended to be used with RegNet backbone, 
+        This module is intended to be used with RegNet backbone, 
         not EfficientNet as in the original paper.
 
         Args:
-        - feature_dim: Dimensionality of the input feature(s)
-        - eps: Small value used to avoid numerical instability during 'Fast normalized fusion'. Set to 1e-4 by default.
+        - feature_dim: Int.
+            Dimensionality of the input feature(s)
+        - eps: Float.
+            Small value used to avoid numerical instability during 
+            'Fast normalized fusion'. Set to 1e-4 by default.
         """
         super().__init__()
 
@@ -162,10 +168,10 @@ class HermesDepthwiseConvBlock(pl.LightningModule):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: int = 1,
-        stride: int = 1,
-        padding: int = 0,
-        dilation: int = 1,
+        kernel_size: int=1,
+        stride: int=1,
+        padding: int=0,
+        dilation: int=1,
     ) -> None:
         """
         Depthwise separable convolution layer with batch normalization and ReLU activation.
@@ -227,21 +233,27 @@ class HermesConvBlock(pl.LightningModule):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: int = 1,
-        stride: int = 1,
-        padding: int = 0,
-        dilation: int = 1,
-    ) -> None:
+        kernel_size: int=1,
+        stride: int=1,
+        padding: int=0,
+        dilation: int=1,
+    ) -> pl.LightningModule:
         """
         Convolution layer with batch normalization and ReLU activation.
 
         Args:
-        - in_channels: Number of channels in the input image
-        - out_channels: Number of channels produced by the convolution
-        - kernel_size: Size of the convolving kernel. Set to 1 by default.
-        - stride: Stride of the convolution. Set to 1 by default.
-        - padding: Padding added to all four sides of the input. Set to 0 by default.
-        - dilation: Spacing between kernel elements. Set to 1 by default.
+        - in_channels: Int.
+            Number of channels in the input image.
+        - out_channels: Int.
+            Number of channels produced by the convolution.
+        - kernel_size: Int.
+            Size of the convolving kernel. Set to 1 by default.
+        - stride: Int.
+            Stride of the convolution. Set to 1 by default.
+        - padding: Int.
+            Padding added to all four sides of the input. Set to 0 by default.
+        - dilation: Int.
+            Spacing between kernel elements. Set to 1 by default.
         """
         super().__init__()
 
