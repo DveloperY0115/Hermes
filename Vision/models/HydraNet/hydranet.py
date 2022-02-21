@@ -73,10 +73,10 @@ class HermesHydraNet(pl.LightningModule):
             A batch of images from which features will be extracted.
 
         Returns:
-        -
+        - 
         """
         # RegNet forward-pass
-        regnet_features = self.regnet.get_stage_features(x)
+        regnet_features = self.regnet(x, return_stage_features=True)
 
         # extract stem & head features
         stem_feature = regnet_features.pop(0)

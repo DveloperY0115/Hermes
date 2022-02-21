@@ -31,7 +31,7 @@ def main():
     regnetX = HermesRegNetX()
     regnetY = HermesRegNetY()
 
-    _ = regnetY.get_stage_features(torch.zeros((1, 3, 224, 224)).cuda())
+    _ = regnetY(torch.zeros((1, 3, 224, 224)).cuda(), return_stage_features=True)
 
     # draw computational graph(s)
     writer.add_graph(regnetX, torch.zeros(1, 3, 224, 224).cuda())
